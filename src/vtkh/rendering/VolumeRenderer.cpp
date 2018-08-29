@@ -100,6 +100,15 @@ VolumeRenderer::PreExecute()
 
   this->m_corrected_color_table = corrected;
 
+  int np = this->m_corrected_color_table.GetNumberOfPointsAlpha();
+  std::cout<<"ALPHAS :\n";
+  for(int i = 0; i < np; ++i)
+  {
+    vtkm::Vec<vtkm::Float64,4> alpha;
+    this->m_corrected_color_table.GetPointAlpha(i,alpha);
+    std::cout<<alpha<<"\n";
+  }
+
   vtkm::Vec<vtkm::Float32,3> extent; 
   extent[0] = static_cast<vtkm::Float32>(this->m_bounds.X.Length());
   extent[1] = static_cast<vtkm::Float32>(this->m_bounds.Y.Length());
