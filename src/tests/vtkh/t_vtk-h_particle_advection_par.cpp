@@ -154,6 +154,7 @@ TEST(vtkh_particle_advection, vtkh_serial_particle_advection)
   streamline.SetSeedsRandomWhole(std::stoi(args["--numSeeds"]));
   streamline.SetUseThreadedVersion(std::stoi(args["--threaded"]));
   streamline.SetDelaySend(std::stoi(args["--delaySend"]));
+  streamline.SetDynamicSend(std::stoi(args["--dynamicSend"]));
   std::string device = args["--device"];
 
   if (rank == 0) std::cout<<"********************************** CUDAAvail= "<<vtkh::IsCUDAAvailable()<<std::endl;
@@ -187,9 +188,13 @@ TEST(vtkh_particle_advection, vtkh_serial_particle_advection)
   {
       //mark it as started....
       std::string s = args["--statsfile"];
-      FILE *fp = fopen(s.c_str(), "w");
-      fprintf(fp, "Running...\n");
-      fclose(fp);
+      if (rank == 0)
+      {
+          FILE *fp = fopen(s.c_str(), "w");
+          fprintf(fp, "Running...\n");
+          fclose(fp);
+          std::cout<<"Running: "<<s<<std::endl;
+      }
       streamline.SetStatsFile(args["--statsfile"]);
   }
   if (args["--residentTime"] != "")
@@ -225,6 +230,7 @@ int main(int argc, char* argv[])
     args["--device"] = "serial";
     args["--residentTime"] = "";
     args["--delaySend"] = "0";
+    args["--dynamicSend"] = "0";
 
     int i = 1;
     while (i < argc)

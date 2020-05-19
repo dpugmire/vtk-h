@@ -57,7 +57,8 @@ ParticleAdvection::ParticleAdvection()
       statsFile("particleAdvection.stats.txt"),
       dumpResidentTime(false),
       residentTimeFile("residentTime.txt"),
-      delaySend(false)
+      delaySend(false),
+      dynamicSend(0)
 {
 #ifdef VTKH_PARALLEL
   rank = vtkh::GetMPIRank();
@@ -107,7 +108,26 @@ void ParticleAdvection::TraceMultiThread(std::vector<ResultT> &traces)
   vtkh::ParticleAdvectionTask<ResultT> *task = new vtkh::ParticleAdvectionTask<ResultT>(mpiComm, boundsMap, this);
 
   task->Init(active, totalNumSeeds, sleepUS, batchSize);
+
+#ifdef VTKH_PARALLEL
+  MPI_Barrier(MPI_COMM_WORLD);
+  eventT0 = MPI_Wtime();
+#else
+  eventT0 = -1;
+#endif
+  SET_EVENT_T0(eventT0);
+  TIMER_START("total");
+  EVENT_BEGIN("main");
+
+//Do the work.
   task->Go();
+
+  TIMER_STOP("total");
+  EVENT_END("main");
+  DUMP_STATS(statsFile);
+
+
+
   task->results.Get(traces);
 
   if (dumpResidentTime)
@@ -128,11 +148,16 @@ void ParticleAdvection::TraceMultiThread(std::vector<ResultT> &traces)
       if (rank == 0)
       {
           std::ofstream output;
-          output.open(residentTimeFile, std::ofstream::out);
+          output.open(residentTimeFile, std::ios::binary);
+          output.write((char*)&result[0], totalNumSeeds*sizeof(double));
+          output.close();
 
+/*
+          output.open(residentTimeFile, std::ofstream::out );
           for (int i = 0; i < totalNumSeeds; i++)
               output<<i<<" "<<result[i]<<std::endl;
           output.close();
+*/
       }
   }
 
@@ -165,7 +190,7 @@ ParticleAdvection::InternalIntegrate<vtkm::worklet::ParticleAdvectionResult>(Dat
     return blk.integrator.Advect(v, maxSteps, I, T, A, statsDB, &traces);
   else
   {
-      return blk.integrator.Advect(v, maxSteps, I, T, A, &traces, workerInactive, statsDB, delaySend);
+      return blk.integrator.Advect(v, maxSteps, I, T, A, &traces, workerInactive, statsDB, delaySend, dynamicSend);
   }
 }
 
@@ -266,24 +291,11 @@ void ParticleAdvection::TraceSingleThread(std::vector<ResultT> &traces)
 template <typename ResultT>
 void ParticleAdvection::TraceSeeds(std::vector<ResultT> &traces)
 {
-#ifdef VTKH_PARALLEL
-  MPI_Barrier(MPI_COMM_WORLD);
-  eventT0 = MPI_Wtime();
-#else
-  eventT0 = -1;
-#endif
-  SET_EVENT_T0(eventT0);
-  TIMER_START("total");
-  EVENT_BEGIN("main");
-
   if (useThreadedVersion)
       TraceMultiThread<ResultT>(traces);
   else
       TraceSingleThread<ResultT>(traces);
 
-  TIMER_STOP("total");
-  EVENT_END("main");
-  DUMP_STATS(statsFile);
 }
 
 void ParticleAdvection::DoExecute()

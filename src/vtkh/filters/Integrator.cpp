@@ -125,7 +125,8 @@ int Integrator::Advect(std::vector<vtkh::Particle> &particles,
                        std::vector<vtkm::worklet::ParticleAdvectionResult> *particleTraces,
                        vtkh::ThreadSafeContainer<vtkh::Particle, std::vector> &workerInactive,
                        vtkh::StatisticsDB& statsDB,
-                       bool delaySend)
+                       bool delaySend,
+                       int dynamicSend)
 {
     vtkm::cont::ArrayHandle<vtkm::Particle> seedArray;
     int steps0 = SeedPrep(particles, seedArray);
@@ -163,6 +164,7 @@ int Integrator::Advect(std::vector<vtkh::Particle> &particles,
     int steps1 = 0;
 
     double residentTime = 0;
+    vtkm::Id numWaiting = 0;
     while (!done)
     {
         vtkh::StopWatch residentTimer;
@@ -172,8 +174,8 @@ int Integrator::Advect(std::vector<vtkh::Particle> &particles,
         TIMER_STOP("residentTime");
         residentTime += residentTimer.Stop();
         vtkm::Id currRemain = vtkm::cont::Algorithm::Reduce(ActiveArr, vtkm::Id(0));
-        //vtkm::Id justCompleted = prevRemain - currRemain;
-
+        vtkm::Id justCompleted = prevRemain - currRemain;
+        numWaiting += justCompleted;
         done = (currRemain == 0);
 
         TIMER_START("batchProcess");
@@ -184,7 +186,19 @@ int Integrator::Advect(std::vector<vtkh::Particle> &particles,
         dispatcherDC.Invoke(ActiveArr, CopiedArr, needCopy);
         vtkm::Id numCopy = vtkm::cont::Algorithm::Reduce(needCopy, vtkm::Id(0));
 
-        if (numCopy > 0)
+        bool shouldCopy = done;
+        if (dynamicSend == 0)
+            shouldCopy = (numCopy > 0);
+        else if (numCopy > 0)
+        {
+            //Only copy if we have processed 20% of the seeds, or less than 1000 seeds
+            if (numSeeds < 1000)
+                shouldCopy = true;
+            else if (numCopy > numSeeds/5)
+                shouldCopy = true;
+        }
+
+        if (shouldCopy)
         {
             vtkm::cont::ArrayHandle<vtkm::Particle> out;
             vtkm::cont::ArrayHandle<vtkm::Id> outIdx;

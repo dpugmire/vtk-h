@@ -52,6 +52,9 @@ public:
     vtkm::Vec3f inpos = particle.Pos;
     vtkm::FloatDefault time = particle.Time;
     bool tookAnySteps = false;
+//#ifndef CUDA
+//    std::cout<<"worklet: num OMP threads= ", omp_get_num_threads()<<std::endl;
+//#endif
 
     //the integrator status needs to be more robust:
     // 1. you could have success AND at temporal boundary.
@@ -125,7 +128,8 @@ public:
                std::vector<vtkm::worklet::ParticleAdvectionResult> *particleTraces,
                vtkh::ThreadSafeContainer<vtkh::Particle, std::vector> &workerInactive,
                vtkh::StatisticsDB& statsDB,
-               bool delaySend=false);
+               bool delaySend=false,
+               int dynamicCopy=0);
 
     int Advect(std::vector<vtkh::Particle> &particles,
                vtkm::Id maxSteps,
