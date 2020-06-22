@@ -58,7 +58,8 @@ ParticleAdvection::ParticleAdvection()
       dumpResidentTime(false),
       residentTimeFile("residentTime.txt"),
       delaySend(false),
-      dynamicSend(0)
+      dynamicSend(0),
+      maxParticleGet(-1)
 {
 #ifdef VTKH_PARALLEL
   rank = vtkh::GetMPIRank();
@@ -107,7 +108,7 @@ void ParticleAdvection::TraceMultiThread(std::vector<ResultT> &traces)
 
   vtkh::ParticleAdvectionTask<ResultT> *task = new vtkh::ParticleAdvectionTask<ResultT>(mpiComm, boundsMap, this);
 
-  task->Init(active, totalNumSeeds, sleepUS, batchSize);
+  task->Init(active, totalNumSeeds, sleepUS, batchSize, maxParticleGet);
 
 #ifdef VTKH_PARALLEL
   MPI_Barrier(MPI_COMM_WORLD);

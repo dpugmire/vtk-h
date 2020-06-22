@@ -155,6 +155,7 @@ TEST(vtkh_particle_advection, vtkh_serial_particle_advection)
   streamline.SetUseThreadedVersion(std::stoi(args["--threaded"]));
   streamline.SetDelaySend(std::stoi(args["--delaySend"]));
   streamline.SetDynamicSend(std::stoi(args["--dynamicSend"]));
+  streamline.SetMaxParticleGet(std::stoi(args["--maxParticleGet"]));
   std::string device = args["--device"];
 
   if (rank == 0) std::cout<<"********************************** CUDAAvail= "<<vtkh::IsCUDAAvailable()<<std::endl;
@@ -231,6 +232,7 @@ int main(int argc, char* argv[])
     args["--residentTime"] = "";
     args["--delaySend"] = "0";
     args["--dynamicSend"] = "0";
+    args["--maxParticleGet"] = "-1";
 
     int i = 1;
     while (i < argc)

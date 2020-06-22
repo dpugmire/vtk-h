@@ -29,7 +29,8 @@ public:
         boundsMap(bmap),
         filter(pa),
         sleepUS(100),
-        batchSize(-1)
+        batchSize(-1),
+        maxParticleGet(-1)
     {
         m_Rank = vtkh::GetMPIRank();
         m_NumRanks = vtkh::GetMPISize();
@@ -41,12 +42,13 @@ public:
     {
     }
 
-    void Init(const std::vector<Particle> &particles, int N, int _sleepUS, int _batchSize)
+    void Init(const std::vector<Particle> &particles, int N, int _sleepUS, int _batchSize, vtkm::Id _maxParticleGet)
     {
         numWorkerThreads = 1;
         TotalNumParticles = N;
         sleepUS = _sleepUS;
         batchSize = _batchSize;
+        maxParticleGet = _maxParticleGet;
         active.Assign(particles);
         inactive.Clear();
         terminated.Clear();
@@ -56,7 +58,11 @@ public:
     {
         std::vector<Particle> ps;
 
-        active.Get(ps);
+        if (maxParticleGet > 1)
+            active.Get(ps, (std::size_t)maxParticleGet);
+        else
+            active.Get(ps);
+
         if (ps.empty())
             return false;
 
@@ -264,6 +270,7 @@ public:
     int numWorkerThreads;
     int sleepUS;
     int batchSize;
+    vtkm::Id maxParticleGet;
 
     bool done, begin;
     vtkh::Mutex stateLock;

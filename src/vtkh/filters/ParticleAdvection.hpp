@@ -82,6 +82,7 @@ public:
   void SetMaxSteps(const int &n) { maxSteps = n;}
   int  GetMaxSteps() const { return maxSteps; }
   void SetBatchSize(const int &n) {batchSize = n;}
+  void SetMaxParticleGet(const vtkm::Id &n) {maxParticleGet = n;}
 
   DataBlockIntegrator * GetBlock(int blockId);
 
@@ -136,6 +137,7 @@ protected:
   vtkm::Bounds seedBox;
   vtkm::Vec<double,3> seedPoint;
   int batchSize;
+  vtkm::Id maxParticleGet;
   std::string statsFile;
   std::string residentTimeFile;
   bool dumpResidentTime;
