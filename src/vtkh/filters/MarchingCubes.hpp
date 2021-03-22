@@ -6,6 +6,8 @@
 #include <vtkh/filters/Filter.hpp>
 #include <vtkh/DataSet.hpp>
 
+#include <vtkh/filters/TaskQueue.hpp>
+
 namespace vtkh
 {
 
@@ -34,6 +36,10 @@ protected:
   std::string m_field_name;
   int m_levels;
   bool m_use_contour_tree;
+
+  void Work(vtkh::DataSetQueue* input, vtkh::DataSetQueue* output);
+
+  static void Worker(vtkh::DataSetQueue* input, vtkh::DataSetQueue* output, vtkh::MarchingCubes* filter);
 };
 
 } //namespace vtkh

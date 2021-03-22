@@ -24,6 +24,10 @@ public:
 
   void ClearMapFields();
 
+  void SetThreadSerial() { this->ThreadMode = vtkh::Filter::THREAD_SERIAL; }
+  void SetThreadOpenMP() { this->ThreadMode = vtkh::Filter::THREAD_OMP; }
+  void SetThreadTask(int numThreads) { this->ThreadMode = vtkh::Filter::THREAD_TASK; this->NumThreads = numThreads; }
+
 protected:
   virtual void DoExecute() = 0;
   virtual void PreExecute();
@@ -46,6 +50,16 @@ protected:
   void PropagateMetadata();
 
   void CheckForRequiredField(const std::string &field_name);
+
+  typedef enum
+  {
+    THREAD_SERIAL=0,
+    THREAD_OMP=1,
+    THREAD_TASK=2
+  } ThreadingType;
+
+  ThreadingType ThreadMode = vtkh::Filter::THREAD_SERIAL;
+  int NumThreads = 1;
 };
 
 } //namespace vtkh

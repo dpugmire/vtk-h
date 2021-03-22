@@ -10,6 +10,8 @@
 #include <vtkh/vtkm_filters/vtkmMarchingCubes.hpp>
 
 #include <sstream>
+#include <vector>
+#include <thread>
 
 namespace vtkh
 {
@@ -145,27 +147,61 @@ void MarchingCubes::DoExecute()
   }
 
   const int num_domains = this->m_input->GetNumberOfDomains();
-  for(int i = 0; i < num_domains; ++i)
+
+  if (this->ThreadMode == vtkh::Filter::THREAD_OMP)
   {
-
-    vtkm::Id domain_id;
-    vtkm::cont::DataSet dom;
-    this->m_input->GetDomain(i, dom, domain_id);
-
-    if(!dom.HasField(m_field_name))
+#pragma omp parallel
+#pragma omp for
+    for(int i = 0; i < num_domains; ++i)
     {
-      continue;
+      vtkm::Id domain_id;
+      vtkm::cont::DataSet dom;
+      this->m_input->GetDomain(i, dom, domain_id);
+
+      if(!dom.HasField(m_field_name))
+        continue;
+
+      vtkh::vtkmMarchingCubes marcher;
+      auto dataset = marcher.Run(dom,
+                                 m_field_name,
+                                 m_iso_values,
+                                 this->GetFieldSelection());
+
+      temp_data.AddDomain(dataset, domain_id);
     }
+  }
+  else if (this->ThreadMode == vtkh::Filter::THREAD_TASK)
+  {
+    vtkh::DataSetQueue input(*(this->m_input)), output;
 
-    vtkh::vtkmMarchingCubes marcher;
+    std::vector<std::thread> threads;
+    for (int i = 0; i < this->NumThreads; i++)
+      threads.push_back(std::thread(vtkh::MarchingCubes::Worker, &input, &output, this));
 
-    auto dataset = marcher.Run(dom,
-                               m_field_name,
-                               m_iso_values,
-                               this->GetFieldSelection());
+    for (auto& t : threads)
+      t.join();
 
-    temp_data.AddDomain(dataset, domain_id);
+    temp_data = output.Get();
+  }
+  else if (this->ThreadMode == vtkh::Filter::THREAD_SERIAL)
+  {
+    for(int i = 0; i < num_domains; ++i)
+    {
+      vtkm::Id domain_id;
+      vtkm::cont::DataSet dom;
+      this->m_input->GetDomain(i, dom, domain_id);
 
+      if(!dom.HasField(m_field_name))
+        continue;
+
+      vtkh::vtkmMarchingCubes marcher;
+      auto dataset = marcher.Run(dom,
+                                 m_field_name,
+                                 m_iso_values,
+                                 this->GetFieldSelection());
+
+      temp_data.AddDomain(dataset, domain_id);
+    }
   }
 
   CleanGrid cleaner;
@@ -184,6 +220,32 @@ std::string
 MarchingCubes::GetName() const
 {
   return "vtkh::MarchingCubes";
+}
+
+void
+MarchingCubes::Work(vtkh::DataSetQueue* input, vtkh::DataSetQueue* output)
+{
+
+  vtkm::cont::DataSet ds;
+  while (input->GetTask(ds))
+  {
+    if (!ds.HasField(this->m_field_name))
+      continue;
+
+    vtkh::vtkmMarchingCubes marcher;
+    auto dataset = marcher.Run(ds,
+                               this->m_field_name,
+                               this->m_iso_values,
+                               this->GetFieldSelection());
+
+    output->Push(std::move(dataset));
+  }
+}
+
+void
+MarchingCubes::Worker(vtkh::DataSetQueue* input, vtkh::DataSetQueue* output, vtkh::MarchingCubes* filter)
+{
+  filter->Work(input, output);
 }
 
 } //  namespace vtkh

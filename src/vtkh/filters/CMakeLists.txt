@@ -22,6 +22,7 @@ set(vtkh_filters_headers
   PointAverage.hpp
   PointTransform.hpp
   Recenter.hpp
+  TaskQueue.hpp
   Tetrahedralize.hpp
   Threshold.hpp
   Triangulate.hpp
