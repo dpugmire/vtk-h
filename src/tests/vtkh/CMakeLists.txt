@@ -73,6 +73,7 @@ set(BASIC_TESTS t_vtk-h_smoke
                 t_vtk-h_raytracer
                 t_vtk-h_render
                 t_vtk-h_slice
+                t_vtk-h_threaded_filter
                 t_vtk-h_volume_renderer
                 )
 
@@ -97,7 +98,7 @@ set(MPI_TESTS t_vtk-h_smoke_par
               t_vtk-h_raytracer_par
               t_vtk-h_sampling_par
               t_vtk-h_volume_renderer_par
-              
+
               )
 
 # Contour tree depends on the VTK-m build type.

@@ -192,6 +192,8 @@ vtkm::cont::Field CreatePointVecField(int size, const char* fieldName)
 
 vtkm::cont::DataSet CreateTestData(int block, int num_blocks, int base_size)
 {
+  std::cout<<"Create data set "<<block<<" of "<<num_blocks<<std::endl;
+
   SpatialDivision mesh_size;
 
   mesh_size.m_mins[0] = 0;
@@ -238,11 +240,11 @@ vtkm::cont::DataSet CreateTestData(int block, int num_blocks, int base_size)
   int num_points = point_dims[0] * point_dims[1] * point_dims[2];
   int num_cells = cell_dims[0] * cell_dims[1] * cell_dims[2];
 
-  data_set.AddField(CreatePointScalarField<vtkm::Float32>(point_handle, "point_data_Float32"));
-  data_set.AddField(CreatePointVecField<vtkm::Float32>(num_points, "vector_data_Float32"));
-  data_set.AddField(CreateCellScalarField<vtkm::Float32>(num_cells, "cell_data_Float32"));
+//  data_set.AddField(CreatePointScalarField<vtkm::Float32>(point_handle, "point_data_Float32"));
+//  data_set.AddField(CreatePointVecField<vtkm::Float32>(num_points, "vector_data_Float32"));
+//  data_set.AddField(CreateCellScalarField<vtkm::Float32>(num_cells, "cell_data_Float32"));
   data_set.AddField(CreatePointScalarField<vtkm::Float64>(point_handle, "point_data_Float64"));
-  data_set.AddField(CreatePointVecField<vtkm::Float64>(num_points, "vector_data_Float64"));
+//  data_set.AddField(CreatePointVecField<vtkm::Float64>(num_points, "vector_data_Float64"));
   data_set.AddField(CreateCellScalarField<vtkm::Float64>(num_cells, "cell_data_Float64"));
   data_set.AddField(CreateGhostScalarField(cell_dims));
   return data_set;

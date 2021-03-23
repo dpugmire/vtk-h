@@ -147,6 +147,7 @@ void MarchingCubes::DoExecute()
   }
 
   const int num_domains = this->m_input->GetNumberOfDomains();
+  std::cout<<"NumDomains= "<<num_domains<<std::endl;
 
   if (this->ThreadMode == vtkh::Filter::THREAD_OMP)
   {
@@ -167,7 +168,10 @@ void MarchingCubes::DoExecute()
                                  m_iso_values,
                                  this->GetFieldSelection());
 
-      temp_data.AddDomain(dataset, domain_id);
+      #pragma omp critical
+      {
+        temp_data.AddDomain(dataset, domain_id);
+      }
     }
   }
   else if (this->ThreadMode == vtkh::Filter::THREAD_TASK)
@@ -176,7 +180,10 @@ void MarchingCubes::DoExecute()
 
     std::vector<std::thread> threads;
     for (int i = 0; i < this->NumThreads; i++)
+    {
+      std::cout<<"Task_"<<i<<std::endl;
       threads.push_back(std::thread(vtkh::MarchingCubes::Worker, &input, &output, this));
+    }
 
     for (auto& t : threads)
       t.join();
