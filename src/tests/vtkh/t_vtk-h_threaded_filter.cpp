@@ -15,9 +15,28 @@
 
 #include <iostream>
 
+vtkh::DataSet ReadVisItFile(const std::string& fname)
+{
+
+  std::ifstream visitFile;
+  visitFile.open(fname);
+
+  vtkh::DataSet dataSets;
+
+  std::string f;
+  std::vector<std::string> fileNames;
+  while (visitFile >> f)
+    fileNames.push_back(f);
+
+  std::cout<<"VISITFILE: "<<fileNames.size()<<std::endl;
+  return dataSets;
+}
+
 //----------------------------------------------------------------------------
 TEST(vtkh_threaded_filter, vtkh_threaded_filter)
 {
+
+  auto bum = ReadVisItFile("../data/chem.1033.visit");
   vtkh::DataSet data_set;
 
   const int base_size = 32;
